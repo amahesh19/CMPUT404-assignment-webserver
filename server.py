@@ -1,5 +1,9 @@
 #  coding: utf-8 
 import socketserver
+import lib
+
+status_flags = lib.lib["status_flags"]
+mimetypes = lib.lib["mimetypes"]
 
 # Copyright 2013 Abram Hindle, Eddie Antonio Santos
 # 
@@ -27,20 +31,61 @@ import socketserver
 # try: curl -v -X GET http://127.0.0.1:8080/
 
 
-class MyWebServer(socketserver.BaseRequestHandler):
+class MyWebServer(socketserver.BaseRequestHandler):                    
     
+    def serve_read_file_request(self, filepath): 
+        base_url = lib.lib["baseUrl"]
+        result = ""
+        mimetype = mimetypes["text"]
+        status = status_flags["success"]
+
+        if(filepath.endswith("/")):
+            filepath += "index.html"
+        
+        try:
+            if(filepath.startswith("/../")):
+                raise
+
+            url = base_url+filepath
+            fileObj = open(url, 'r')
+            result = fileObj.read()
+
+            if(filepath.endswith(".css")):
+                mimetype = mimetypes["css"]
+            elif(filepath.endswith(".html")):
+                mimetype = mimetypes["html"]
+        except:
+            print("couldn't open!")
+            status = status_flags["http_error"]
+
+        return status, result, mimetype
+
     def handle(self):
         self.data = self.request.recv(1024).strip()
+
         print ("Got a request of: %s\n" % self.data)
-        self.request.sendall(bytearray("OK",'utf-8'))
+
+        endpoint = str(self.data).split(" ")[1]
+
+        result = ""
+        mimetype = mimetypes["text"]
+        status = status_flags["success"]
+        
+        if("GET" in str(self.data).split(" ")[0]):
+            status, result, mimetype = self.serve_read_file_request(endpoint)
+        else:
+            status = status_flags["method_not_allowed"]
+
+        response = f"{lib.lib['protocol']} {status}\r\nContent-Type: {mimetype}\r\nConnection: closed\r\n\r\n{result}"
+        self.request.sendall(bytearray(response,'utf-8'))
 
 if __name__ == "__main__":
     HOST, PORT = "localhost", 8080
 
     socketserver.TCPServer.allow_reuse_address = True
-    # Create the server, binding to localhost on port 8080
+    # # Create the server, binding to localhost on port 8080
     server = socketserver.TCPServer((HOST, PORT), MyWebServer)
 
-    # Activate the server; this will keep running until you
-    # interrupt the program with Ctrl-C
+    # # Activate the server; this will keep running until you
+    # # interrupt the program with Ctrl-C
     server.serve_forever()
