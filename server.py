@@ -1,5 +1,5 @@
 #  coding: utf-8 
-import socketserver
+import socketserver, os
 import lib
 
 status_flags = lib.lib["status_flags"]
@@ -38,21 +38,26 @@ class MyWebServer(socketserver.BaseRequestHandler):
         result = ""
         mimetype = mimetypes["text"]
         status = status_flags["success"]
+        url = base_url+filepath
 
-        if(filepath.endswith("/")):
-            filepath += "index.html"
-        
+        end_slug = url.split("/").pop()
+
+        if(url.endswith("/")):
+            url += "index.html"
+        elif(os.path.isdir(url) and end_slug!=""):
+            status = status_flags["more_possible_responses"]
+            return status, result, mimetype
+            
         try:
             if(filepath.startswith("/../")):
                 raise
 
-            url = base_url+filepath
             fileObj = open(url, 'r')
             result = fileObj.read()
 
-            if(filepath.endswith(".css")):
+            if(url.endswith(".css")):
                 mimetype = mimetypes["css"]
-            elif(filepath.endswith(".html")):
+            elif(url.endswith(".html")):
                 mimetype = mimetypes["html"]
         except:
             print("couldn't open!")
@@ -70,12 +75,12 @@ class MyWebServer(socketserver.BaseRequestHandler):
         result = ""
         mimetype = mimetypes["text"]
         status = status_flags["success"]
-        
-        if("GET" in str(self.data).split(" ")[0]):
-            status, result, mimetype = self.serve_read_file_request(endpoint)
-        else:
-            status = status_flags["method_not_allowed"]
 
+        if("GET" not in str(self.data).split(" ")[0]):
+            status = status_flags["method_not_allowed"]
+        else:
+            status, result, mimetype = self.serve_read_file_request(endpoint)
+            
         response = f"{lib.lib['protocol']} {status}\r\nContent-Type: {mimetype}\r\nConnection: closed\r\n\r\n{result}"
         self.request.sendall(bytearray(response,'utf-8'))
 

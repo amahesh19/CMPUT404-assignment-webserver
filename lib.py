@@ -3,6 +3,7 @@ lib = {
             "success": "200 OK",
             "http_error": 404,
             "method_not_allowed": 405,
+            "more_possible_responses": 300,
         },
     "mimetypes":{
         "text": "text/plain",
