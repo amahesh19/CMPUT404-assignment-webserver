@@ -60,7 +60,6 @@ class MyWebServer(socketserver.BaseRequestHandler):
             elif(url.endswith(".html")):
                 mimetype = mimetypes["html"]
         except:
-            print("couldn't open!")
             status = status_flags["http_error"]
 
         return status, result, mimetype
