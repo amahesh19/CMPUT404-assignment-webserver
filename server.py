@@ -45,9 +45,9 @@ class MyWebServer(socketserver.BaseRequestHandler):
         if(url.endswith("/")):
             url += "index.html"
         elif(os.path.isdir(url) and end_slug!=""):
-            status = status_flags["more_possible_responses"]
-            return status, result, mimetype
-            
+            status = status_flags["moved_permanently"]
+            url += "/index.html"
+
         try:
             if(filepath.startswith("/../")):
                 raise
@@ -66,7 +66,6 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
     def handle(self):
         self.data = self.request.recv(1024).strip()
-
         print ("Got a request of: %s\n" % self.data)
 
         endpoint = str(self.data).split(" ")[1]
@@ -80,7 +79,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
         else:
             status, result, mimetype = self.serve_read_file_request(endpoint)
             
-        response = f"{lib.lib['protocol']} {status}\r\nContent-Type: {mimetype}\r\nConnection: closed\r\n\r\n{result}"
+        response = f"{lib.lib['protocol']} {status}\r\nContent-Type: {mimetype}\r\nContent-Length: {len(result)}\r\nConnection: closed\r\n\r\n{result}"
         self.request.sendall(bytearray(response,'utf-8'))
 
 if __name__ == "__main__":
