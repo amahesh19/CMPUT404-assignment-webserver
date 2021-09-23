@@ -6,7 +6,7 @@ lib = {
             "moved_permanently": "301 Moved Permanently",
         },
     "mimetypes":{
-        "text": "text/plain",
+        "binary": "application/octet-stream",
         "html": "text/html",
         "css":  "text/css",
     },

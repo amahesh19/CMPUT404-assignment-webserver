@@ -33,21 +33,28 @@ mimetypes = lib.lib["mimetypes"]
 
 class MyWebServer(socketserver.BaseRequestHandler):                    
     
+    '''
+    This api fetches data from the file specified in the endpoint
+    '''
     def serve_read_file_request(self, filepath): 
+        #Initialize variables
         base_url = lib.lib["baseUrl"]
         result = ""
-        mimetype = mimetypes["text"]
+        mimetype = mimetypes["binary"]
         status = status_flags["success"]
         url = base_url+filepath
 
+        #Get last slug from the filepath/endpoint
         end_slug = url.split("/").pop()
 
+        #Check if its a directory else redirect to file
         if(url.endswith("/")):
             url += "index.html"
         elif(os.path.isdir(url) and end_slug!=""):
             status = status_flags["moved_permanently"]
             url += "/index.html"
 
+        # Try to read from file and set result, status and mimetype based on filetype
         try:
             if(filepath.startswith("/../")):
                 raise
@@ -62,24 +69,32 @@ class MyWebServer(socketserver.BaseRequestHandler):
         except:
             status = status_flags["http_error"]
 
+        #return data
         return status, result, mimetype
 
     def handle(self):
+        #receive data from client
         self.data = self.request.recv(1024).strip()
         print ("Got a request of: %s\n" % self.data)
 
+        #parse data to get the endpoint
         endpoint = str(self.data).split(" ")[1]
 
+        #Initialize default response variables
         result = ""
-        mimetype = mimetypes["text"]
+        mimetype = mimetypes["binary"]
         status = status_flags["success"]
 
+        #Fetch file body based on endpoint only if tis a GET request
         if("GET" not in str(self.data).split(" ")[0]):
             status = status_flags["method_not_allowed"]
         else:
-            status, result, mimetype = self.serve_read_file_request(endpoint)
+            status, result, mimetype = self.serve_read_file_request(endpoint) #Api call to fetch file data
             
+        #Create response String
         response = f"{lib.lib['protocol']} {status}\r\nContent-Type: {mimetype}\r\nContent-Length: {len(result)}\r\nConnection: closed\r\n\r\n{result}"
+        
+        #Send response back to client
         self.request.sendall(bytearray(response,'utf-8'))
 
 if __name__ == "__main__":
